@@ -63,7 +63,7 @@ with dai.Pipeline() as pipeline:
     left.build(dai.CameraBoardSocket.CAM_B)
     out = None
 
-stereo.setDefaultProfilePreset(dai.node.StereoDepth.PresetMode.DEFAULT)
+stereo.setDefaultProfilePreset(dai.node.StereoDepth.PresetMode.DEFAULT) # hi
 stereo.setRectifyEdgeFillColor(0)
 stereo.enableDistortionCorrection(True)
 
