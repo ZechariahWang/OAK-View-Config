@@ -11,14 +11,12 @@ except ImportError:
 
 isRunning = True
 
-def draw_crosshair(depth_frame, x, y, color=(0, 0, 255), size=5, thickness=1):
-    h, w = depth_frame.shape
-    cx, cy = w // 2, h // 2
-    z = depth_at(depth_frame, cx, cy)
-    cv2.drawMarker(depth_frame, (cx, cy), color, markerType=cv2.MARKER_CROSS, markerSize=size, thickness=thickness)
+def draw_crosshair(heatmap, depth_frame, x, y, color=(255, 255, 255), size=10, thickness=1):
+    z = depth_at(depth_frame, x, y)
+    cv2.drawMarker(heatmap, (x, y), color, markerType=cv2.MARKER_CROSS, markerSize=size, thickness=thickness)
     if z:
-        cv2.putText(depth_frame, f"{z:.1f} mm", (cx + 10, cy - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 1)
-    return depth_frame
+        cv2.putText(heatmap, f"{z/1000:.2f} m", (x + 10, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 1)
+    return heatmap
 
 def depth_at(depth_frame, x, y):
     if x < 0 or y < 0 or x >= depth_frame.shape[1] or y >= depth_frame.shape[0]:
@@ -124,8 +122,20 @@ with pipeline:
     rgbd.pcl.link(o3dViewer.inputPCL)
 
     pipeline.start()
-    print("pipeline running - press Q in the viewer window to quit")
+    print("pipeline running - press Q in a window to quit")
+
+    mouse = {"pos": None}
+    def on_mouse(event, x, y, flags, param):
+        mouse["pos"] = (x, y)
+
+    cv2.namedWindow("Depth Heatmap")
+    cv2.setMouseCallback("Depth Heatmap", on_mouse)
+
     while isRunning and pipeline.isRunning():
+        inRgb = rgbQ.tryGet()
+        if inRgb is not None:
+            cv2.imshow("RGB", inRgb.getCvFrame())
+
         inDepth = depthQ.tryGet()
         if inDepth is not None:
             depthFrame = inDepth.getFrame()
@@ -133,7 +143,19 @@ with pipeline:
             norm = cv2.normalize(clipped, None, 0, 255, cv2.NORM_MINMAX)
             heatmap = cv2.applyColorMap(norm.astype(np.uint8), cv2.COLORMAP_TURBO)
             heatmap[depthFrame==0] = (30,30,30)
-        time.sleep(0.1)
+
+            h, w = depthFrame.shape
+            draw_crosshair(heatmap, depthFrame, w // 2, h // 2)
+            if mouse["pos"]:
+                mx, my = mouse["pos"]
+                draw_crosshair(heatmap, depthFrame, mx, my, color=(0, 0, 255))
+
+            cv2.imshow("Depth Heatmap", heatmap)
+
+        if cv2.waitKey(1) in (ord('q'), ord('Q')):
+            isRunning = False
+
+    cv2.destroyAllWindows()
 
 
 
