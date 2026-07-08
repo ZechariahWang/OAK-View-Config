@@ -51,8 +51,19 @@ class O3DNode(dai.node.ThreadedHostNode):
 
         vis.destroy_window()
 
-# create the pipeline
-with dai.Pipeline() as pipeline:
+# retry logic
+pipeline = None
+for attempt in range(4):
+    try:
+        pipeline = dai.Pipeline()
+        break
+    except Exception as e:
+        print(f"connect attempt {attempt + 1} failed: {e}")
+        time.sleep(10)
+if pipeline is None:
+    sys.exit("could not connect to the device after 4 attempts")
+
+with pipeline:
     fps = 30
 
     left = pipeline.create(dai.node.Camera)
@@ -89,6 +100,7 @@ with dai.Pipeline() as pipeline:
     rgbd.pcl.link(o3dViewer.inputPCL)
 
     pipeline.start()
+    print("pipeline running - press Q in the viewer window to quit")
     while isRunning and pipeline.isRunning():
         time.sleep(0.1)
 
