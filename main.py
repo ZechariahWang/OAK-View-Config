@@ -82,6 +82,7 @@ if pipeline is None:
 
 with pipeline:
     fps = 17
+    resolution = (640, 400)
 
     left = pipeline.create(dai.node.Camera)
     right = pipeline.create(dai.node.Camera)
@@ -99,18 +100,18 @@ with pipeline:
     stereo.setRectifyEdgeFillColor(0)
     stereo.enableDistortionCorrection(True)
 
-    left.requestOutput((640, 400)).link(stereo.left)
-    right.requestOutput((640, 400)).link(stereo.right)
+    left.requestOutput(resolution).link(stereo.left)
+    right.requestOutput(resolution).link(stereo.right)
     platform = pipeline.getDefaultDevice().getPlatform()
     if platform == dai.Platform.RVC4:
-        out = color.requestOutput((640, 400), dai.ImgFrame.Type.RGB888i, enableUndistortion=True)
+        out = color.requestOutput(resolution, dai.ImgFrame.Type.RGB888i, enableUndistortion=True)
         align = pipeline.create(dai.node.ImageAlign)
         stereo.depth.link(align.input)
         out.link(align.inputAlignTo)
         depthOut = align.outputAligned
         align.outputAligned.link(rgbd.inDepth)
     else:
-        out = color.requestOutput((640, 400), dai.ImgFrame.Type.RGB888i, dai.ImgResizeMode.CROP, 30, True)
+        out = color.requestOutput(resolution, dai.ImgFrame.Type.RGB888i, dai.ImgResizeMode.CROP, fps, True)
         stereo.depth.link(rgbd.inDepth)
         depthOut = stereo.depth
         out.link(stereo.inputAlignTo)
