@@ -56,6 +56,7 @@ with dai.Pipeline() as pipeline:
     fps = 30
 
     left = pipeline.create(dai.node.Camera)
+    right = pipeline.create(dai.node.Camera)
     stereo = pipeline.create(dai.node.StereoDepth)
     color = pipeline.create(dai.node.Camera)
     rgbd = pipeline.create(dai.node.RGBD).build()
@@ -63,6 +64,7 @@ with dai.Pipeline() as pipeline:
     color.build()
     o3dViewer = pipeline.create(O3DNode)
     left.build(dai.CameraBoardSocket.CAM_B)
+    right.build(dai.CameraBoardSocket.CAM_C)
     out = None
 
     stereo.setDefaultProfilePreset(dai.node.StereoDepth.PresetMode.DEFAULT)
@@ -70,6 +72,7 @@ with dai.Pipeline() as pipeline:
     stereo.enableDistortionCorrection(True)
 
     left.requestOutput((640, 400)).link(stereo.left)
+    right.requestOutput((640, 400)).link(stereo.right)
     platform = pipeline.getDefaultDevice().getPlatform()
     if platform == dai.Platform.RVC4:
         out = color.requestOutput((640, 400), dai.ImgFrame.Type.RGB888i, enableUndistortion=True)
